@@ -27,6 +27,7 @@ C ****************************************************************************
       else if (taskid .ge. numtasks/2) then
         partner = taskid - numtasks/2
       end if
+      print *, "Hello I am", taskid, "my partner is", partner
 
       call MPI_FINALIZE(ierr)
 
