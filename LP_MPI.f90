@@ -5,11 +5,11 @@
 ! numtasks = number of proceses in the communiator
 ! taskid   = current process value
 ! No, N, M = Number of tiles in horizontal and vertical direction
-! ids, ide, ims, ime
-!
-!
-!
-!
+! ids, ide, jds, jde = Start and end indices in the vertical and horizontal direction of the domain
+! ib, jb = tile indices established by process rank
+! its, ite, jts, jte = start and end indices in the horizontal and vertical of each tile
+! ims, ime, jms, jme = boundary condition indices for each tile
+! leftbf, rbc, tbc, bbs = Boundary condition arrays for each tile
 !
 !
 !
@@ -83,13 +83,13 @@ jme = jte+1
 
 
 !Defining arrays to store boundary conditions
-REAL, DIMENSION(jme), TARGET :: tbc, bbc
-real, dimension(ime), target :: leftbc, rbc
+REAL, DIMENSION(0:jsize+1), TARGET :: tbc, bbc
+real, dimension(0:isize+1), target :: leftbc, rbc
 
 !Defining pointers to assign to each target
 
-REAL, DIMENSION(jme), POINTER :: ptt, ptb
-real, dimension(ime), pointer :: ptleft, ptr
+REAL, DIMENSION(0:jsize+1), POINTER :: ptt, ptb
+real, dimension(0:isize+1), pointer :: ptleft, ptr
 
 ptt => tbc
 ptb => bbc
@@ -98,28 +98,28 @@ ptr => rbc
 
 
 !Defining  boundary conditions for the top of the domain
-do i = jms,jme
+do i = 0,jsize+1
 tbc(i) = 100
 end do
 
 !Defining  boundary conditions for the bottom of the domain
 
 
-do i = jms,jme
+do i = 0,jsize + 1
 bbc(i) = 100
 end do
 
 !Defining  boundary conditions for the left side of the domain
 
 
-do i = ims,ime
+do i = 0,isize +1
 lbc(i) = 100
 end do
 
 !Defining  boundary conditions for the right side of the domain
 
 
-do i = ims, ime
+do i = 0, isize +1
 rbc(i) = 100
 end do
 
@@ -135,7 +135,7 @@ print *,'task ',taskid,' block ',ib,jb, ' tile ', its,':',ite,' ',jts,':',jte
 
 
 !possibly change to function
-call work(taskid, ib, jb, its, ite, jts, jte, ims, ime, jms, jme, N, M, leftbc, rbc, tbc, bbc)
+call work(taskid, ib, jb, its, ite, jts, jte, ims, ime, jms, jme, N, M, leftbc, rbc, tbc, bbc, isize, jsize)
 
 call MPI_FINALIZE(ierr)
 
@@ -155,11 +155,11 @@ end function divideup
 
 
 
-subroutine work(taskid, ib,jb,its,ite,jts,jte,ims,ime,jms,jme, N, M, leftbc, rbc, tbc, bbc)
+subroutine work(taskid, ib,jb,its,ite,jts,jte,ims,ime,jms,jme, N, M, leftbc, rbc, tbc, bbc, isize, jsize)
 
 integer:: i, j, taskid,ib, jb, its,ite,jts,jte    
 ! starting and ending indices of the submatrix I am updating
-integer::  ims,ime,jms,jme, N, M, turn 
+integer::  ims,ime,jms,jme, N, M, turn, isize, jsize 
      
  ! starting and ending indices of the submatrix I have in memory - at least by 1 larger on each side
 
@@ -237,8 +237,8 @@ end if
 
 if (jb > 1) then
 
-call MPI_RECV(u(its:ite, jms), ite, MPI_DOUBLE, taskid - M, 0, MPI_COMM_WORLD, ierr)
-call MPI_SEND(u(its:ite, jts), ite, MPI_DOUBLE, taskid -M, 0, MPI_COMM_WORLD, ierr)
+call MPI_RECV(u(its:ite, jms), isize, MPI_DOUBLE, taskid - M, 0, MPI_COMM_WORLD, ierr)
+call MPI_SEND(u(its:ite, jts), isize, MPI_DOUBLE, taskid -M, 0, MPI_COMM_WORLD, ierr)
 
 if (jb<N)
 
