@@ -8,6 +8,9 @@ C ****************************************************************************
       program hello
       include 'mpif.h'
       parameter (MASTER = 0)
+      integer buf(1)
+      integer partner
+
 
       integer numtasks, taskid, len, ierr
       character(MPI_MAX_PROCESSOR_NAME) hostname
@@ -28,7 +31,10 @@ C ****************************************************************************
         partner = taskid - numtasks/2
       end if
       print *, "Hello I am", taskid, "my partner is", partner
-
+      buf(1) = taskid
+      call MPI_SEND(buf(1), 1, MPI_INT, partner, 
+     + partner, MPI_COMM_WORLD, ierr)
+      print*, "Send completed the error code is", ierr
       call MPI_FINALIZE(ierr)
 
   20  format('Hello from task ',I2,' on ',A48)

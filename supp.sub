@@ -1,4 +1,3 @@
-
 #!/bin/bash
 #$ -pe mpi 32   # request 32 slots (MPI processes)
 #$ -q math-colibri # the queue to submit to
