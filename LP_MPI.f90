@@ -1,9 +1,25 @@
+! Final Project MPI Readings Course
+! Evan Shapiro
+! Parallel Laplace Equation
+! ierr     = error communicator for MPI
+! numtasks = number of proceses in the communiator
+! taskid   = current process value
+! No, N, M = Number of tiles in horizontal and vertical direction
+! ids, ide, ims, ime
+!
+!
+!
+!
+!
+!
+!
 program Laplace
 include 'mpi.h'
 implicit none
 
 integer :: ierr, numtasks, taskid
 
+!Initialize MPI
 call mpi_init(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, numtasks, ierr)
 call MPI_COMM_RANK(MPI_COMM_WORLD, taskid, ierr)
@@ -18,7 +34,7 @@ integer :: i,j
 ids = 1
 ide =1000
 jds = 1
-jde = 1100
+jde = 1000
 ! who am I? what is my 
 
 
@@ -29,6 +45,7 @@ call MPI_COMM_SIZE(MPI_COMM_WORLD, numtasks, ierr)
 
 
 No = floor(sqrt(dble(numtasks)))
+!changing variables back to integers
 N = INT(No)
 M = INT(N)
 
@@ -45,6 +62,9 @@ ib = 1+mod(taskid,M)
 
 isize = divideup(ide-ids+1, M)
 jsize = divideup(jde-jds+1, N)
+
+isize = int(isize)
+jsize = int(jsize)
 
 ! compute my ib,jb,its,ite,jts,jte
 its = ids + isize*(ib-1)
@@ -63,12 +83,12 @@ jme = jte+1
 
 
 !Defining arrays to store boundary conditions
-REAL, DIMENSION(100), TARGET :: tbc, bbc
+REAL, DIMENSION(jme), TARGET :: tbc, bbc
 real, dimension(ime), target :: leftbc, rbc
 
-!Defining pointers to assign to each targer
+!Defining pointers to assign to each target
 
-REAL, DIMENSION(100), POINTER :: ptt, ptb
+REAL, DIMENSION(jme), POINTER :: ptt, ptb
 real, dimension(ime), pointer :: ptleft, ptr
 
 ptt => tbc
@@ -78,28 +98,28 @@ ptr => rbc
 
 
 !Defining  boundary conditions for the top of the domain
-do i = 1,jme
+do i = jms,jme
 tbc(i) = 100
 end do
 
 !Defining  boundary conditions for the bottom of the domain
 
 
-do i = 1,jme
+do i = jms,jme
 bbc(i) = 100
 end do
 
 !Defining  boundary conditions for the left side of the domain
 
 
-do i = 1,ime
+do i = ims,ime
 lbc(i) = 100
 end do
 
 !Defining  boundary conditions for the right side of the domain
 
 
-do i = 1, ime
+do i = ims, ime
 rbc(i) = 100
 end do
 
@@ -143,7 +163,7 @@ integer::  ims,ime,jms,jme, N, M, turn
      
  ! starting and ending indices of the submatrix I have in memory - at least by 1 larger on each side
 
-double precision:: omega,h, lbc, rbc tbc, bbc
+double precision:: omega,h, leftbc, rbc tbc, bbc, tol
 
 turn = 0
 omega = 0.25
@@ -154,9 +174,9 @@ h = 0.001
 double precision, dimension(ime,jme), target :: u,f,v
 double precision, dimension(ime,jme), pointer :: ptu,ptf,ptv
 
-      ptu => u
-      ptv => v
-      ptf => f
+ptu => u
+ptv => v
+ptf => f
  
 ! dynamic memory allocation
 
@@ -201,16 +221,20 @@ print *,ib,jb
 ! main work loop - compute  v = u - omega * (f - A*u)
 ! need also values with i=its-1 and ite+1 and j=jts-1 and jte+1
 
+!Establishing initial array values
 if (turn .eq. 0) then
 do i = ims, ime
 do j = jms, jme
 u(i,j) = 0
 v(i,j) = 0
-f(i,j) = 0
+f(i,j) = i*0.01
 end do
 end do
 end if 
-!Corner Cases
+
+!Setting tolerance
+
+
 if (jb > 1) then
 
 call MPI_RECV(u(its:ite, jms), ite, MPI_DOUBLE, taskid - M, 0, MPI_COMM_WORLD, ierr)
